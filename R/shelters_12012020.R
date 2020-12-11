@@ -7,6 +7,7 @@ library(gganimate)
 library(ggrepel)
 library(ggthemes)
 library(ggsci)
+
 tuesdata <- tidytuesdayR::tt_load(2020, week = 49)
 df <- tuesdata$shelters
 

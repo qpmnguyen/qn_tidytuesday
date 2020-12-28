@@ -3,11 +3,8 @@ library(tidyverse)
 library(glue)
 library(lubridate)
 library(wbstats)
-library(ggrepel)
 library(ggthemes)
 library(extrafont)
-library(ggrepel)
-library(patchwork)
 
 # importing fonts using extrafont
 font_import()
@@ -36,18 +33,22 @@ df <- left_join(df, external, by = c("year", "iso3c", "country")) %>%
 df <- df %>% filter(year >= 2011) 
 
 
-# according to gapminder, the median life expectancy for all countries from 2000 - 2007 is about 71.2
+# summarise by year
 df <- df %>% group_by(year, country) %>% summarise(usd_raw = mean(usd_raw), 
                                                   usd_adj = mean(usd_adjusted), 
                                                   ind = mean(ind))
+# Whether the currency is over versus undervaluated
 df <- df %>% pivot_longer(c(usd_raw, usd_adj), names_to = "type", values_to = "index") %>% 
   mutate(status = ifelse(index >= 0, "Over-valuated", "Under-valuated"))
+
+# Renaming and removing NAs
 df <- df %>% filter(!is.na(status)) %>% mutate(type = ifelse(type == "usd_adj", "GDP Adjusted", "Raw"))
 
-plt <- ggplot(df , aes(x = index, y = ind)) + 
-  #geom_jitter(alpha = 0.6, aes(col = status), show.legend = FALSE) + 
-  #geom_boxplot(alpha = 0.4, aes(fill = status)) + 
-  geom_point(aes(col = status)) + stat_smooth(aes(col = status)) + 
+# main plotting
+plt <- ggplot(df , aes(x = status, y = ind)) + 
+  geom_jitter(alpha = 0.6, aes(col = status), show.legend = FALSE) + 
+  geom_boxplot(alpha = 0.4, aes(fill = status)) + 
+  #geom_point(aes(col = status)) + stat_smooth(aes(col = status)) + 
   facet_grid(type~year)  + 
   theme_bw() + scale_color_manual(values = c("#e3120b", "#4a4a4a")) + 
   scale_fill_nejm() + theme_clean() + 
@@ -57,5 +58,4 @@ plt <- ggplot(df , aes(x = index, y = ind)) +
         axis.title.y = element_text(size = 13), legend.position = "bottom", 
         strip.text.y = element_text(size = 12), legend.text = element_text(family = "Lato")) 
 
-plt
 ggsave(plt, filename = "figures/big_mac_12222020.png", dpi = 300, width = 9, height = 8, device = "png")
